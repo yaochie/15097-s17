@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from robot import Robot
 from robot import Bank
 from board import Board
