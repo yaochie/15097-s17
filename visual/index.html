@@ -1,0 +1,491 @@
+<!-- Author:Deniz Sokullu -->
+<html>
+    <head>
+        <link href="css/dragdealer.css" rel="stylesheet">
+        <script type="text/javascript" src="js/phaser.min.js"></script>
+        <script type="text/javascript" src="js/dragdealer.js"></script>
+        <script type="text/javascript" src="js/hashTable.js" ></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    </head>
+    <style type="text/css" media="screen">
+        html{
+            font-family: "Courier New",sans-serif;
+        }
+    </style>
+    <body>
+        <div class="container" id = "game" style="width:52%;height:auto;margin:0 auto;position:relative;">
+                      <!-- <div id="demo-simple-slider" class="dragdealer"
+            style = "position:relative;width:60%;height:5px;top:40px;margin:0 auto;">
+          <div class="handle red-bar" style = "background-color:green;position:relative;top:-8px;height:20px;width:40px;line-height:20px;border-radius:20%;"></div> -->
+          </div>
+        <script type="text/javascript">
+        var config = {
+        "width": 900,
+        "height": 900,
+        "renderer": Phaser.AUTO,
+        "parent": 'game',
+        "resolution": window.devicePixelRatio,
+        "state": { "preload": preload, "create": create, 
+        "update": update, "render": render }
+        };
+        var width = 650;
+        var height = 650;
+        var game = new Phaser.Game(config);
+        function preload() {
+            game.time.advancedTiming = true;
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.scale.pageAlignHorizontally = true;
+            game.scale.pageAlignVertically = true;
+            game.stage.backgroundColor = '#eee';
+            game.load.image('markerRED', 'images/markerRED.png');
+            game.load.image('markerYELLOW', 'images/markerYELLOW.png');
+            game.load.image('markerBLUE', 'images/markerBLUE.png');
+            game.load.image('markerGREEN', 'images/markerGREEN.png');
+            game.load.image('markerORANGE', 'images/markerORANGE.png');
+            game.load.image('potato1', 'images/potato1.png');
+            game.load.image('potato2', 'images/potato2.png');
+            game.load.image('potato5', 'images/potato5.png');
+            game.load.image('potato10', 'images/potato10.png');
+            game.load.image('potatoCarrier', 'images/potatoCarrier.png');
+            game.load.image('wall', 'images/wall.png');
+            game.load.image('base', 'images/base.png');
+            game.load.text('gameDataJSON', 'map.txt');
+        }
+
+        var cursors;
+        var bottomWall;
+        var topWall;
+        var rightWall;
+        var leftWall;
+        var gameData;
+        var moveList;
+        var wallSize = 12;
+        var counter = 0;
+        var mainCounter = 0;
+
+        var FPS = 30;
+        var STEP = 0;
+        var SCORE = 0;
+        var MAPSIZE;
+        var STARTX;
+        var STARTY;
+        var CURRENTTURN = 4;
+        var PLAY = true;
+        var RATIO = 40;
+        var worldWidth;
+        var worldHeight;
+        var ZOOM = 0.40;
+        var ZOOMAMOUNT = 0.01;
+        var MAXZOOM = 1.2;
+        var MINZOOM = 0.04;
+        var WALLDIST = 40;
+        var PAN = 100;
+        var TURNS;
+
+        var widgetGroup = new HashTable();
+        var robotGroup = new HashTable();
+        var markerGroup = new HashTable();
+        var map;
+        var worldWidth;
+        var worldHeight;
+        var gameCenter = undefined;
+
+        function create() {
+            //Setting up the game_log.txt coordinates  
+            var gameDataJSON = game.cache.getText('gameDataJSON');
+            map = JSON.parse(gameDataJSON);
+
+            MAPSIZE = map[0];
+            TURNS = map.length-4;
+            worldWidth = RATIO*MAPSIZE+(wallSize*2);
+            worldHeight = RATIO*MAPSIZE+(wallSize*2);
+            STARTX = map[0][0];
+            STARTY = map[0][1];
+
+            var base = game.add.sprite((worldWidth/2),(worldWidth/2),'base');
+
+            var setup = map[3][0];
+
+            SCORE = map[3][1];
+            CURRENTTURN++;
+
+            var robots = setup.robots;
+            var widgets = setup.locations;
+            var obstacles = map[2];
+
+            //Setting up keys
+            pause = game.input.keyboard.addKey(Phaser.Keyboard.P);
+            pause.onDown.add(pause_game,this);
+
+            rewind = game.input.keyboard.addKey(Phaser.Keyboard.Z);
+            rewind.onDown.add(step_backward,this);
+            forward = game.input.keyboard.addKey(Phaser.Keyboard.X);
+            forward.onDown.add(step_forward,this);
+
+            rewind10 = game.input.keyboard.addKey(Phaser.Keyboard.C);
+            rewind10.onDown.add(step_backward10,this);
+            forward10 = game.input.keyboard.addKey(Phaser.Keyboard.V);
+            forward10.onDown.add(step_forward10,this);
+
+            rewind50 = game.input.keyboard.addKey(Phaser.Keyboard.B);
+            rewind50.onDown.add(step_backward50,this);
+            forward50 = game.input.keyboard.addKey(Phaser.Keyboard.N);
+            forward50.onDown.add(step_forward50,this);
+
+            //each widget is represented by (location,sprite) pair.
+            for (var i = 0; i < widgets.length; i++){
+                var x = widgets[i][1];
+                var y = widgets[i][0];
+                var size = widgets[i][2];
+                var key = parseInt(x)+","+parseInt(y);
+                var widgetSprite = game.add.sprite(x*RATIO,y*RATIO,'potato'+size);
+                widgetGroup.setItem(key,widgetSprite);
+            }
+            //each robot is represented by (index,sprite) pair.
+            for (var i = 0; i < robots.length; i++){
+                var x = robots[i][1];
+                var y = robots[i][0];
+                var key = parseInt(i);
+                var robotSprite = game.add.sprite(parseInt(x)*RATIO,parseInt(y)*RATIO,'potatoCarrier');
+                robotGroup.setItem(key,robotSprite);
+            }
+            //walls are drawn once and never updated.
+            for (var i = 0; i < obstacles.length; i++){
+                var x = obstacles[i][1];
+                var y = obstacles[i][0];
+                var key = parseInt(i);
+                var obstaclesSprite = game.add.sprite(parseInt(x)*RATIO,parseInt(y)*RATIO,'wall');
+            }
+
+
+            //setting world boundaries
+            game.stage.backgroundColor = '#2d2d2d';
+
+            game.world.setBounds(0, 0, worldWidth, worldHeight);
+            cursors = game.input.keyboard.createCursorKeys();
+
+
+            game.camera.x = (game.world.width/2)-(width/2);
+            game.camera.y = (game.world.height/2)-(height/2);
+
+            gameCameraXFix = (game.world.width/2)-(width/2);
+            gameCameraYFix = (game.world.height/2)-(height/2);
+
+            var gameCenter = game.add.sprite(game.camera.x,game.camera.y);
+
+            game.world.scale.set(ZOOM);
+            game.world.width = (worldWidth*ZOOM);
+            game.world.height = (worldHeight*ZOOM);
+            game.camera.x = gameCameraXFix * ZOOM - (width/2);
+            game.camera.y = gameCameraYFix * ZOOM - (height/2);
+        }
+
+        function pause_game(){
+            if(CURRENTTURN != TURNS){
+               PLAY = !PLAY; 
+            } 
+        }
+
+        function step_backward(){
+            if (PLAY){pause_game()};
+            if (!PLAY & CURRENTTURN > 4){
+                oldMap = map[CURRENTTURN][0];
+                //remove the current added marker
+                for (var i = 0; i < oldMap.markers.length;i++){
+                    var x = oldMap.markers[i][1][1];
+                    var y = oldMap.markers[i][1][0];
+                    var key = parseInt(x)+','+parseInt(y)+','+CURRENTTURN;
+                    var item = markerGroup.getItem(key)
+                    if (item !== undefined){
+                        markerGroup.getItem(key).destroy();
+                        markerGroup.removeItem(key);
+                    }
+                }
+                CURRENTTURN--;
+                curMap = map[CURRENTTURN][0];
+                for(var i = 0; i < curMap.locations.length; i++){
+                    var x = curMap.locations[i][1];
+                    var y = curMap.locations[i][0];
+                    var color = curMap.locations[i][2]
+                    var key = parseInt(x)+","+parseInt(y)
+                    var widgetSprite = game.add.sprite(x*RATIO,y*RATIO,'potato'+color);
+                    widgetGroup.setItem(key,widgetSprite);
+                }
+                for(i = 0; i < curMap.robots.length;i++){
+                    x = parseInt(curMap.robots[i][1]);
+                    y = parseInt(curMap.robots[i][0]);
+                    key = parseInt(i);
+                    robotGroup.getItem(key).x = x*RATIO;
+                    robotGroup.getItem(key).y = y*RATIO;
+                }
+            }
+            // handle.setValue(CURRENTTURN/TURNS,handle.getValue[1]);
+        }
+
+        function step_forward(){
+            if (PLAY){pause_game()};
+            if (!PLAY & CURRENTTURN != TURNS){
+                updateObjects(CURRENTTURN);
+                CURRENTTURN++;
+                // handle.setValue(CURRENTTURN/TURNS,handle.getValue[1]);
+            }
+        }
+
+        function step_forward10(){
+            if (PLAY){pause_game()};
+            if (CURRENTTURN < TURNS){
+                for (var i = 0; i < 10; i++){
+                    step_forward();
+                    if (CURRENTTURN == TURNS){
+                        break;
+                    }
+                }
+            }
+        }
+
+        function step_forward50(){
+            if (PLAY){pause_game()};
+            if (CURRENTTURN < TURNS){
+                for (var i = 0; i < 50; i++){
+                    step_forward();
+                    if (CURRENTTURN == TURNS){
+                        break;
+                    }
+                }
+            }
+        }
+
+        function step_backward10(){
+            if (PLAY){pause_game()};
+            if (CURRENTTURN > 4){
+                for (var i = 0; i < 10; i++){
+                    step_backward();
+                    if (CURRENTTURN <= 4){
+                        break;
+                    }
+                }
+            }
+        }
+
+        function step_backward50(){
+           if (PLAY){pause_game()};
+            if (CURRENTTURN > 4){
+                for (var i = 0; i < 50; i++){
+                    step_backward();
+                    if (CURRENTTURN <= 4){
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        function changeRobotOpacity(){
+            robotGroup.each(function(key,robot){
+                if (robot.alpha > 0 )
+                    robot.alpha = 0;
+                else{
+                    robot.alpha = 1;
+                }
+            })
+        }
+
+        // var handle = new Dragdealer('demo-simple-slider',
+        //     {steps: TURNS,
+        //      slide:false, 
+        //     animationCallback: function(x, y) {
+        //         $('.handle').text(Math.round(x * TURNS));
+
+        //     }
+        // });
+
+        function updateObjects(currentTurn){
+            var curMap = map[currentTurn][0];
+            //updating score
+            SCORE = map[currentTurn][1];
+            //updating widgets
+            for(var i = 0; i < curMap.locations.length; i++){
+                var x = curMap.locations[i][1];
+                var y = curMap.locations[i][0];
+                var key = parseInt(x)+","+parseInt(y);
+                widgetGroup.getItem(key).destroy();
+                widgetGroup.removeItem(key);
+            }
+            //updating robots
+            for(i = 0; i < curMap.robots.length;i++){
+                x = parseInt(curMap.robots[i][1]);
+                y = parseInt(curMap.robots[i][0]);
+                key = parseInt(i);
+                robotGroup.getItem(key).x = x*RATIO;
+                robotGroup.getItem(key).y = y*RATIO;
+            }
+            //add the new marker
+            for(var i = 0; i < curMap.markers.length; i++){
+                var x = curMap.markers[i][1][1];
+                var y = curMap.markers[i][1][0];
+                var color = curMap.markers[i][0];
+                var key = parseInt(x)+','+parseInt(y)+','+currentTurn;
+                var markerSprite = game.add.sprite(parseInt(x)*RATIO,parseInt(y)*RATIO,'marker'+color);
+                markerGroup.setItem(key,markerSprite);
+            }
+        }
+        function resizeGame(counter){
+            game.world.scale.set(ZOOM);
+            game.world.width = (worldWidth*ZOOM);
+            game.world.height = (worldHeight*ZOOM);
+            game.camera.x = gameCameraXFix * ZOOM - (width/2);
+            game.camera.y = gameCameraYFix * ZOOM - (height/2);
+
+        }
+
+        function update() {
+
+                mainCounter ++;
+
+                if (mainCounter % Math.trunc(60/FPS) == 0 && PLAY) {
+                    updateObjects(CURRENTTURN);
+                    CURRENTTURN++;
+                    // if (handle.x != CURRENTTURN){
+                    //     handle.setValue((CURRENTTURN)/TURNS,handle.getValue[1]);
+                    // }    
+                }
+
+                if (CURRENTTURN == map.length-1){
+                    PLAY = false;
+                }
+
+                if (mainCounter == TURNS){
+                    mainCounter = 0;
+                }
+                
+                if (game.world.width <= width){
+                    game.world.width = width
+                }
+                //cursor map movement
+                if (this.game.input.activePointer.isDown) { if (this.game.origDragPoint) {      
+                // move the camera by the amount the mouse has moved since last update
+                    this.game.camera.x += this.game.origDragPoint.x - this.game.input.activePointer.position.x;
+                    this.game.camera.y += this.game.origDragPoint.y - this.game.input.activePointer.position.y; }   
+                    // set new drag origin to current position
+                    this.game.origDragPoint = this.game.input.activePointer.position.clone();}
+                else {  this.game.origDragPoint = null;}
+                // console.log(handle.getValue()[0]);
+
+                // var handle_x = (Math.round(handle.getValue()[0] * TURNS) % TURNS);
+
+                if (cursors.left.isDown)
+                {
+                    game.camera.x -= 10;
+                }
+                else if (cursors.right.isDown)
+                {
+                    game.camera.x += 10;
+                }
+
+                if (cursors.up.isDown)
+                {
+                    game.camera.y -= 10;
+                }
+                else if (cursors.down.isDown)
+                {
+                    game.camera.y += 10;
+                }
+
+                else if (game.input.keyboard.isDown(Phaser.Keyboard.A))
+                {   
+                    if (ZOOM > MINZOOM && game.world.width > width){
+                        if (worldWidth*(ZOOM-ZOOMAMOUNT) > width){
+                            ZOOM -= ZOOMAMOUNT;
+                            resizeGame(-ZOOMAMOUNT);
+                        }
+                    }
+                }
+                else if (game.input.keyboard.isDown(Phaser.Keyboard.S))
+                {   
+                    if (ZOOM < MAXZOOM){
+                        ZOOM += ZOOMAMOUNT;
+                        resizeGame(ZOOMAMOUNT); 
+                    }
+                }
+                else if (game.input.keyboard.isDown(Phaser.Keyboard.Q))
+                {
+                    if (FPS > 1){
+                        FPS--;
+                    }
+                }
+                else if (game.input.keyboard.isDown(Phaser.Keyboard.W))
+                {
+                    if (FPS < 60){
+                        FPS++;
+                    }
+                }
+
+                // else if (handle_x != CURRENTTURN){
+                //         var gameWasPaused = true;
+                //         if (PLAY){
+                //             gameWasPaused = false;
+                //             PLAY = !PLAY;
+                //         }
+                //         if ((handle_x < CURRENTTURN) & handle_x > 4 ){
+                //             while (handle_x != CURRENTTURN){
+                //                 var diff = CURRENTTURN - handle_x;
+                //                 for (var i = 0; i < diff; i++){
+                //                     console.log(CURRENTTURN)
+                //                    step_backward();
+                //                 }
+                //             }
+                //         }
+                //         else if (handle_x > CURRENTTURN){
+                //             while (handle_x != CURRENTTURN){
+                //                 var diff =  handle_x - CURRENTTURN;
+                //                 for (var i = 0; i < diff; i++){
+                //                    step_forward();
+                //                 }
+                //             }
+                //         }
+                //         if (!PLAY & !gameWasPaused){
+                //             PLAY = !PLAY;
+                //         }
+                //     }
+
+                //main counter events
+
+        }
+
+        function render() {
+            game.debug.geom(topWall,'#aaaaaa');
+            game.debug.geom(bottomWall,'#aaaaaa');
+            game.debug.geom(leftWall,'#aaaaaa');
+            game.debug.geom(rightWall,'#aaaaaa');
+            game.debug.text("FPS: " + game.time.fps || '--', 15, 30, "#00ff00"); 
+            game.debug.text("SPS: " + FPS || '--', 15, 50, "#00ff00"); 
+            game.debug.text("Turn: "+(CURRENTTURN) || '--', 15, 70, "#00ff00");
+            game.debug.text("Score: "+SCORE || '--', 15, 90, "#00ff00");
+            if (!PLAY){
+                game.debug.text("Paused", 15, 110, "#00ff00");
+            }
+        }
+
+    </script>
+    </div>
+    <div class = "container" style = "width:20%;left:50px;top:0;position:absolute;z-index:40;">
+        <div style="width:80%;float:left;">
+            <p>Drag and move around the map with cursor</p>
+            <p><strong>Arrow Keys</strong>: Navigate Map</p>
+            <p><strong>Q</strong> : Reduce Step Rate(min:1)</p>
+            <p><strong>W</strong> : Increase Step Rate(max:60)</p>
+            <p><strong>P</strong> : Pause/Unpause</p>
+            <p><strong>A</strong> : Zoom out</p>
+            <p><strong>S</strong> : Zoom in</p> 
+            <p><strong>Z</strong> : Step 1 Frame Back</p>
+            <p><strong>C</strong> : Step 10 Frames Back</p>
+            <p><strong>B</strong> : Step 50 Frames Back</p>
+            <p><strong>X</strong> : Step 1 Frame Forward</p>
+            <p><strong>V</strong> : Step 10 Frames Forward</p>
+            <p><strong>N</strong> : Step 50 Frames Forward</p>
+        </div>
+        
+    </div>
+
+    </body>
+</html>
