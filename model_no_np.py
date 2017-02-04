@@ -94,4 +94,4 @@ def test():
     plt.plot(data)
     plt.savefig('graph.png')
     
-test()
+#test()

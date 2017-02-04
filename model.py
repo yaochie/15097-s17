@@ -37,6 +37,8 @@ class Brain:
         return expvec/norm
 
     def choose(self, chances):
+        if random.random() < 0.05:
+            return np.random.choice(range(self.num_out))
         return np.random.choice(range(self.num_out), p = chances)
 
     #use this function to output the index of the action to be taken
@@ -109,4 +111,4 @@ def test():
     plt.show()
     B.saveweights()
     
-test()
+#test()
