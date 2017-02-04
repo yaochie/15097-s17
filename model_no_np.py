@@ -24,7 +24,6 @@ class Brain:
             line_ = list(map(float,line.strip().split(',')[:-1]))
             rows.append(line_)
         self.weights = rows
-        print(np.array(self.weights))
         
     def softmax(self, vec):
         maxvec = max(vec)

@@ -36,6 +36,7 @@ class player_robot(Robot):
         self.targetDest = (0,0)
         self.position = (0,0)
         self.randPoint = None
+        self.uid = random.random()
 
     # A couple of helper functions (Implemented at the bottom)
     def OppositeDir(self, direction):
@@ -70,12 +71,12 @@ class player_robot(Robot):
     def get_move(self, view, brain):
         self.numturns += 1
         # Returns home if you have one resource
-        if len(self.toHome) + 2 > (1000 - self.numturns) or self.storage_remaining() <= 0:
+        if len(self.toHome) + 2 > (SetupConstants.NUM_TURNS - self.numturns) or self.storage_remaining() <= 0:
             self.goinghome = True
 
         # How to navigate back home
         if self.goinghome:
-            # You are t home
+            # You are at home
             if self.toHome == [] :
                 self.goinghome = False
                 return (Actions.DROPOFF, Actions.DROP_NONE)
@@ -126,19 +127,29 @@ class player_robot(Robot):
         distance_rand = math.floor(math.hypot(offset_rand[0], offset_rand[1]))
         angle_rand = math.atan2(offset_rand[0], offset_rand[1])
         
-        # len 158
-        vect += [distance, angle, distance_rand, angle_rand, 1]
+        # len 159
+        vect += [distance, angle, distance_rand, angle_rand, self.uid, 1]
 
-        # feed to brain
-        actionIdx = brain.sample(vect)
+        # feed to brain, check that result is allowed (can move to that tile)
+        offsets = {Actions.MOVE_E: (0,1), Actions.MOVE_N: (-1,0), Actions.MOVE_S: (1,0),
+            Actions.MOVE_W: (0,-1), Actions.MOVE_NE: (-1,1), Actions.MOVE_NW: (-1,-1),
+            Actions.MOVE_SW: (1,-1), Actions.MOVE_SE: (1,1)}
         actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
-            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE, Actions.DROPOFF, Actions.MINE]
-        #print(actions[actionIdx])
-        actionToTake = actions[actionIdx]
+            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE]
+        viewLen = len(view)
+        while True:
+            actionIdx = brain.sample(vect)
+            #print(actions[actionIdx])
+            actionToTake = actions[actionIdx]
+
+            viewIndex = (viewLen // 2, viewLen // 2)
+            offset = offsets[actionToTake]
+            if view[viewIndex[0] + offset[0]][viewIndex[1] + offset[1]][0].CanMove():
+                break
 
         self.toHome.append(actionToTake)
 
-        return (actionToTake, Actions.DROP_NONE)
+        return (actionToTake, Actions.DROP_BLUE)
 
     """
     def get_move(self, view):
