@@ -36,10 +36,10 @@ class Brain:
         Y = self.softmax(np.matmul(self.weights, input_))
 
         if VERBOSE:
-            print input_
-            print self.weights
-            print np.matmul(self.weights, input_)
-            print Y
+            print(input_)
+            print(self.weights)
+            print(np.matmul(self.weights, input_))
+            print(Y)
         
         idx = self.choose(Y)
         gradient_rows = []
@@ -53,9 +53,9 @@ class Brain:
     def give_reward(self, reward, lr = 0.0001):
         delta = self.gradient*(reward-self.baseline)*lr
         if VERBOSE:
-            print 'rewarding...'
-            print self.gradient
-            print delta
+            print('rewarding...')
+            print(self.gradient)
+            print(delta)
         self.weights += delta
         self.baseline = self.decay*self.baseline + (1.0-self.decay)*reward
         self.newgame()
@@ -90,7 +90,7 @@ def test():
             rwd = -10
 
         B.give_reward(rwd)
-        print rwd, 
+        print(rwd)
         sys.stdout.flush()
         data.append(B.baseline)
 

@@ -1,7 +1,9 @@
 from robot import Robot
-from constants import Actions, TileType
+from constants import Actions, TileType, SetupConstants
 import random
 import time
+import copy
+import math
 
 ##########################################################################
 # One of your team members, Chris Hung, has made a starter bot for you.  #
@@ -32,6 +34,8 @@ class player_robot(Robot):
         self.goinghome = False;      
         self.targetPath = None
         self.targetDest = (0,0)
+        self.position = (0,0)
+        self.randPoint = None
 
     # A couple of helper functions (Implemented at the bottom)
     def OppositeDir(self, direction):
@@ -45,6 +49,17 @@ class player_robot(Robot):
 
     def UpdateTargetPath(self):
         return # See below
+        
+    def UpdatePosition(self, offset):
+        self.position = (self.position[0] + offset[0], self.position[1] + offset[1])    
+    
+    def StateEncoding(self):
+        pass
+        
+    def oneHot(self, idx, num):
+        tmp = [0 for x in range(num)]
+        tmp[idx] = 1
+        return tmp
 
     ###########################################################################################
     # This function is called every iteration. This method receives the current robot's view  #
@@ -52,7 +67,55 @@ class player_robot(Robot):
     #                                                                                         #
     # README - Get_Move                                                                       #
     ###########################################################################################
+    def get_move(self, view, brain):
+        bdim = SetupConstants.BOARD_DIM
+
+        if (self.randPoint is None):
+            diag = bdim/4
+            angle = random.random()*2*math.pi
+            self.randPoint = (math.cos(angle*diag),math.sin(angle*diag))
+
+        viewCopy = copy.deepcopy(view)
+        encoding_dict = dict(Plains=0, Mountain=1, Marker=2, Resource=3, Base=4)
+        for ix in range(len(viewCopy)):
+            for iy in range(len(viewCopy[ix])):
+                #print(viewCopy[ix][iy])
+                viewCopy[ix][iy] = (self.oneHot(viewCopy[ix][iy][0].GetType(), 5), viewCopy[ix][iy][1], viewCopy[ix][iy][2])
+                
+        # flatten (len 150)
+        flat = [item for l1 in viewCopy for l2 in l1 for item in l2[0]]
+        flat += [item[1] for l1 in viewCopy for item in l1]
+        
+        # len 153
+        vect = [self.position[0], self.position[1], self.storage_remaining()] + flat
+        
+        # distance, angle to base
+        distance = math.floor(math.hypot(self.position[0], self.position[1]))
+        angle = math.atan2(self.position[0], self.position[1])
+        
+        # distance, angle to randpoint
+        offset_rand = (self.position[0] - self.randPoint[0], self.position[1] - self.randPoint[1])
+        distance_rand = math.floor(math.hypot(offset_rand[0], offset_rand[1]))
+        angle_rand = math.atan2(offset_rand[0], offset_rand[1])
+        
+        # len 158
+        vect += [distance, angle, distance_rand, angle_rand, 1]
+
+        # feed to brain
+        actionIdx = brain.sample(vect)
+        actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
+            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE, Actions.DROPOFF, Actions.MINE]
+        #print(actions[actionIdx])
+        return (actions[actionIdx], Actions.DROP_NONE)
+
+    """
     def get_move(self, view):
+        bdim = SteupConstants.BOARD_DIM
+
+        if (self.randPoint is None):
+            diag = bdim/4
+            angle = random.random()*2*math.pi
+            self.randPoint = (math.cos(angle*diag),math.sin(angle*diag))
 
         # Returns home if you have one resource
         if (self.held_value() > 0):
@@ -96,7 +159,41 @@ class player_robot(Robot):
         #markerDrop = random.choice([Actions.DROP_RED,Actions.DROP_YELLOW,Actions.DROP_GREEN,Actions.DROP_BLUE,Actions.DROP_ORANGE])
         markerDrop = Actions.DROP_NONE
         assert(isinstance(actionToTake, int))
+        
+        offsets = {Actions.MOVE_E: (0,1), Actions.MOVE_N: (-1,0), Actions.MOVE_S: (1,0),
+            Actions.MOVE_W: (0,-1), Actions.MOVE_NE: (-1,1), Actions.MOVE_NW: (-1,-1),
+            Actions.MOVE_SW: (1,-1), Actions.MOVE_SE: (1,1)}
+        if actionToTake in offsets.keys():
+            self.updatePosition(offsets[actionToTake])
+        
+        viewCopy = copy.deepcopy(views)
+        for ix in len(viewCopy):
+            for iy in len(viewCopy[ix]):
+                viewCopy[ix][iy][0] = self.oneHot(viewCopy[ix][iy][0], 5)
+                
+        # flatten
+        [0 for i in range(len(viewCopy))*len(viewCopy[0])*len(viewCopy[0])
+        
+        flat = [item for l1 in viewCopy for l2 in l1 for item in l2[0]]
+        flat += [item[1] for l1 in viewCopy for item in l1]
+        
+        vect = [self.position[0], self.position[1], self.storage_remaining()] + flat
+        
+        # distance, angle to base
+        distance = math.floor(math.hypot(self.position[0], self.position[1]))
+        angle = math.atan2(self.position[0], self.position[1])
+        
+        # distance, angle to randpoint
+        offset_rand = (self.position[0] - self.randPoint[0], self.position[1] - self.randPoint[1])
+        distance_rand = math.floor(math.hypot(offset_rand[0], offset_rand[1]))
+        angle_rand = math.atan2(offset_rand[0], offset_rand[1])
+        
+        vect += [distance, angle, distance_rand, angle_rand]
+        
+        # fix it to track marker objects
+        
         return (actionToTake, markerDrop)
+    """
 
     # Returns opposite direction
     def OppositeDir(self, prevAction):
@@ -185,6 +282,7 @@ class player_robot(Robot):
 
         if(self.targetPath[0] == (1,0)):
             actionToTake = Actions.MOVE_S
+            
         elif(self.targetPath[0] == (1,1)):
             actionToTake = Actions.MOVE_SE
         elif(self.targetPath[0] == (0,1)):
