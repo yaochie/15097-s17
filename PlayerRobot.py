@@ -68,6 +68,15 @@ class player_robot(Robot):
     # README - Get_Move                                                                       #
     ###########################################################################################
     def get_move(self, view, brain):
+        # go to resource if can be found.
+        self.ViewScan(view)
+        if self.targetPath is not None: 
+            if self.targetPath == []:
+                self.targetPath = None
+                return (Actions.MINE, Actions.DROP_NONE)
+            else:
+                return (self.UpdateTargetPath(), Actions.DROP_NONE)
+
         bdim = SetupConstants.BOARD_DIM
 
         if (self.randPoint is None):
@@ -106,6 +115,7 @@ class player_robot(Robot):
         actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
             Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE, Actions.DROPOFF, Actions.MINE]
         #print(actions[actionIdx])
+
         return (actions[actionIdx], Actions.DROP_NONE)
 
     """

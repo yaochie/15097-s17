@@ -33,8 +33,8 @@ class SetupConstants:
     XLOC = 50
     YLOC = 50
 
-    NUM_ROBOTS = 50
-    NUM_TURNS = 1000
+    NUM_ROBOTS = 3
+    NUM_TURNS = 500
     DEFAULTVISION = 5
     DEFAULTSTORAGE = 50
     DEFAULTPICKUPRATE = 1

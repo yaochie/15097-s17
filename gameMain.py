@@ -55,7 +55,7 @@ def make_board():
 def main():
     brain = Brain(158, 10)
 
-    for i in range(1):
+    for i in range(5):
         #instantiate robots
         game = []
         defaultVision = SetupConstants.DEFAULTVISION
@@ -86,7 +86,7 @@ def main():
         gameThread = threading.Thread(None,lambda:run_game(game, robots, board, brain))
         gameThread.daemon = True
         gameThread.start()
-        gameThread.join(120)
+        gameThread.join(300)
         if(gameThread.isAlive()):
             print("Your robot timed out")
         with open("map.txt", 'w') as gameFile:
