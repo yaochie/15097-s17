@@ -75,15 +75,18 @@ class player_robot(Robot):
             angle = random.random()*2*math.pi
             self.randPoint = (math.cos(angle*diag),math.sin(angle*diag))
 
-        viewCopy = copy.deepcopy(views)
-        for ix in len(viewCopy):
-            for iy in len(viewCopy[ix]):
-                viewCopy[ix][iy][0] = self.oneHot(viewCopy[ix][iy][0], 5)
+        viewCopy = copy.deepcopy(view)
+        encoding_dict = dict(Plains=0, Mountain=1, Marker=2, Resource=3, Base=4)
+        for ix in range(len(viewCopy)):
+            for iy in range(len(viewCopy[ix])):
+                #print(viewCopy[ix][iy])
+                viewCopy[ix][iy] = (self.oneHot(viewCopy[ix][iy][0].GetType(), 5), viewCopy[ix][iy][1], viewCopy[ix][iy][2])
                 
-        # flatten
+        # flatten (len 150)
         flat = [item for l1 in viewCopy for l2 in l1 for item in l2[0]]
         flat += [item[1] for l1 in viewCopy for item in l1]
         
+        # len 153
         vect = [self.position[0], self.position[1], self.storage_remaining()] + flat
         
         # distance, angle to base
@@ -95,11 +98,14 @@ class player_robot(Robot):
         distance_rand = math.floor(math.hypot(offset_rand[0], offset_rand[1]))
         angle_rand = math.atan2(offset_rand[0], offset_rand[1])
         
-        vect += [distance, angle, distance_rand, angle_rand]
+        # len 158
+        vect += [distance, angle, distance_rand, angle_rand, 1]
 
         # feed to brain
         actionIdx = brain.sample(vect)
-        return (actionIdx, Actions.DROP_NONE)
+        actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
+            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE]
+        return (actions[actionIdx], Actions.DROP_NONE)
 
     """
     def get_move(self, view):
