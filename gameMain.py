@@ -57,7 +57,7 @@ def make_board():
 def main():
     brain = Brain(158, 10)
 
-    for i in range(1):
+    for i in range(10000):
         #instantiate robots
         game = []
         defaultVision = SetupConstants.DEFAULTVISION
@@ -95,6 +95,9 @@ def main():
             json.dump(game, gameFile)
         print (board.get_score())
         brain.give_reward(board.get_score())
+        print(brain.baseline)
+
+    brain.saveweights()
 
 def run_game(game, robots, board, brain):
     for i in range(NUM_TURNS):

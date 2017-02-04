@@ -71,7 +71,7 @@ def test():
             
             a = B.sample(input_)
 
-            if a == 0: #j
+            if a == 0:
                 x = (x+1)%s
             elif a == 1:
                 x = (x+s-1)%s
