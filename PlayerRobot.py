@@ -137,8 +137,13 @@ class player_robot(Robot):
         actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
             Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE]
         viewLen = len(view)
+        c = 0
         while True:
-            actionIdx = brain.sample(vect)
+            c+=1
+            if c > 10:
+                actionIdx = random.randint(0,7)
+            else:
+                actionIdx = brain.sample(vect)
             #print(actions[actionIdx])
             actionToTake = actions[actionIdx]
 
