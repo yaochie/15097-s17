@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import sys
-import numpy as np
+#import numpy as np
 import math
 import random
 import copy
@@ -51,9 +51,10 @@ class Brain:
         return idx
 
     def give_reward(self, reward, lr = 0.0001):
+        print('uh why did you call me?')
         self.baseline = self.decay*self.baseline + (1.0-self.decay)*reward
 
-
+'''
 def test():
     data = []
 
@@ -95,3 +96,4 @@ def test():
     plt.savefig('graph.png')
     
 #test()
+'''

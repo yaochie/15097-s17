@@ -12,7 +12,7 @@ import time
 from globalVars import ResourceDepletions
 import threading
 import sys
-from model_no_np import Brain
+from model import Brain
 
 BOARD_DIM = SetupConstants.BOARD_DIM
 NUM_ROBOTS = SetupConstants.NUM_ROBOTS
@@ -56,9 +56,8 @@ def make_board():
 
 def main():
     brain = Brain(158, 10)
-    brain.loadweights()
 
-    for i in range(1):
+    for i in range(10000):
         #instantiate robots
         game = []
         defaultVision = SetupConstants.DEFAULTVISION
@@ -95,7 +94,11 @@ def main():
         with open("map.txt", 'w') as gameFile:
             json.dump(game, gameFile)
         print (board.get_score())
-        #brain.give_reward(board.get_score())
+        brain.give_reward(board.get_score())
+        print(brain.baseline)
+
+        if (i % 100 == 0):
+            brain.saveweights()
 
 def run_game(game, robots, board, brain):
     for i in range(NUM_TURNS):
