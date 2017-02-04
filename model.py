@@ -8,7 +8,7 @@ import random
 VERBOSE = 0
 
 class Brain:
-    def __init__(self, num_in, num_out, decay = 0.95):
+    def __init__(self, num_in, num_out, decay = 0.99):
         mag = 0.01/num_in #xavier init.
         self.weights = np.random.normal(0.0, mag, (num_out, num_in))
         self.num_in = num_in
@@ -37,8 +37,6 @@ class Brain:
         return expvec/norm
 
     def choose(self, chances):
-        if random.random() < 0.05:
-            return np.random.choice(range(self.num_out))
         return np.random.choice(range(self.num_out), p = chances)
 
     #use this function to output the index of the action to be taken

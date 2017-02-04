@@ -97,7 +97,8 @@ def main():
         brain.give_reward(board.get_score())
         print(brain.baseline)
 
-    brain.saveweights()
+        if (i % 100 == 0):
+            brain.saveweights()
 
 def run_game(game, robots, board, brain):
     for i in range(NUM_TURNS):
