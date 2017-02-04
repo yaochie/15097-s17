@@ -104,7 +104,8 @@ class player_robot(Robot):
         # feed to brain
         actionIdx = brain.sample(vect)
         actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
-            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE]
+            Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE, Actions.DROPOFF, Actions.MINE]
+        #print(actions[actionIdx])
         return (actions[actionIdx], Actions.DROP_NONE)
 
     """

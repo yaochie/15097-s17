@@ -53,9 +53,9 @@ def make_board():
 
 
 def main():
-    brain = Brain(158, 8)
+    brain = Brain(158, 10)
 
-    for i in range(100):
+    for i in range(1):
         #instantiate robots
         game = []
         defaultVision = SetupConstants.DEFAULTVISION
