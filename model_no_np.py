@@ -11,11 +11,9 @@ VERBOSE = 0
 
 class Brain:
     def __init__(self, num_in, num_out, decay = 0.995):
-        mag = 0.01/num_in #xavier init.
-        self.weights = np.random.normal(0.0, mag, (num_out, num_in))
         self.num_in = num_in
         self.num_out = num_out
-        self.baseline = 35
+        self.baseline = 90
         self.decay = decay
 
     def loadweights(self, filename = 'weights'):
@@ -42,8 +40,12 @@ class Brain:
         Y = [0 for i in range(self.num_out)]
         for j in range(self.num_out):
             for i in range(self.num_in):
-                Y[j] += self.weights[j][i] + input_[i]
+                Y[j] += self.weights[j][i] * input_[i]
+
+        #print(input_)
+        #print(Y)
         Y = self.softmax(Y)
+
         
         idx = self.choose(Y)[0]
         return idx
@@ -51,32 +53,35 @@ class Brain:
     def give_reward(self, reward, lr = 0.0001):
         self.baseline = self.decay*self.baseline + (1.0-self.decay)*reward
 
+
 def test():
     data = []
-    
-    B = Brain(10,4)
-    B.loadweights()
-    for k in range(10000):
-        x = random.randint(1,4)
-        y = random.randint(1,4)
 
-        input_ = ([1 if i == x else 0 for i in range(5)] +
-                  [1 if i == y else 0 for i in range(5)])
-        
-        for i in range(50):
+    s = 20
+    B = Brain(s*2,4)
+    B.loadweights()
+    
+    for k in range(10000):
+        x = random.randint(1,s-1)
+        y = random.randint(1,s-1)
+
+        for t in range(100):
+            input_ = ([1 if i == x else 0 for i in range(s)] +
+                      [1 if i == y else 0 for i in range(s)])
+            
             a = B.sample(input_)
 
             if a == 0:
-                x = (x+1)%5
+                x = (x+1)%s
             elif a == 1:
-                x = (x+4)%5
+                x = (x+s-1)%s
             elif a == 2:
-                y = (y+1)%5
+                y = (y+1)%s
             elif a == 3:
-                y = (y+4)%5
+                y = (y+s-1)%s
             
             if x == 0 and y == 0:
-                rwd = 50-i
+                rwd = 100-t
                 break
         else:
             rwd = -10
