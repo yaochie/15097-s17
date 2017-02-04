@@ -68,14 +68,33 @@ class player_robot(Robot):
     # README - Get_Move                                                                       #
     ###########################################################################################
     def get_move(self, view, brain):
+        self.numturns += 1
+        # Returns home if you have one resource
+        if len(self.toHome) + 2 > (1000 - self.numturns) or self.storage_remaining() <= 0:
+            self.goinghome = True
+
+        # How to navigate back home
+        if self.goinghome:
+            # You are t home
+            if self.toHome == [] :
+                self.goinghome = False
+                return (Actions.DROPOFF, Actions.DROP_NONE)
+            # Trace your steps back home
+            prevAction = self.toHome.pop()
+            revAction = self.OppositeDir(prevAction)
+            assert isinstance(revAction, int)
+            return (revAction, Actions.DROP_NONE)
+
         # go to resource if can be found.
         self.ViewScan(view)
-        if self.targetPath is not None: 
+        if self.targetPath is not None:
             if self.targetPath == []:
                 self.targetPath = None
                 return (Actions.MINE, Actions.DROP_NONE)
             else:
-                return (self.UpdateTargetPath(), Actions.DROP_NONE)
+                actionToTake = self.UpdateTargetPath()
+                self.toHome.append(actionToTake)
+                return (actionToTake, Actions.DROP_NONE)
 
         bdim = SetupConstants.BOARD_DIM
 
@@ -115,8 +134,11 @@ class player_robot(Robot):
         actions = [Actions.MOVE_N, Actions.MOVE_E, Actions.MOVE_S, Actions.MOVE_W, Actions.MOVE_NW,
             Actions.MOVE_NE, Actions.MOVE_SW, Actions.MOVE_SE, Actions.DROPOFF, Actions.MINE]
         #print(actions[actionIdx])
+        actionToTake = actions[actionIdx]
 
-        return (actions[actionIdx], Actions.DROP_NONE)
+        self.toHome.append(actionToTake)
+
+        return (actionToTake, Actions.DROP_NONE)
 
     """
     def get_move(self, view):
@@ -239,11 +261,12 @@ class player_robot(Robot):
                          view[self.targetDest[0]][self.targetDest[1]][0].AmountRemaining() <= 0)
 
         # BFS TO find the next resource within your view
-        if(self.targetPath == None or targetDepleted):
+        if self.targetPath == None or targetDepleted:
             while(len(queue)>0):
                 path = queue[0]
                 loc = path[0]
                 queue = queue[1:]
+                #print("path: {} \t loc {}".format(path, loc))
                 viewIndex = (loc[0] + viewLen//2,loc[1]+viewLen//2)
                 if (view[viewIndex[0]][viewIndex[1]][0].GetType() == TileType.Resource and
                     view[viewIndex[0]][viewIndex[1]][0].AmountRemaining() > 0):
