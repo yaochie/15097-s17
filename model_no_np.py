@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
 import sys
-# import numpy as np
+import numpy as np
 import math
 import random
 import copy
@@ -15,61 +15,48 @@ class Brain:
         self.weights = np.random.normal(0.0, mag, (num_out, num_in))
         self.num_in = num_in
         self.num_out = num_out
-        self.baseline = 0
+        self.baseline = 35
         self.decay = decay
-        self.newgame()
 
-    def newgame(self):
-        self.gradient = 0
-
+    def loadweights(self, filename = 'weights'):
+        with open(filename, 'r') as f:
+            data = f.readlines()
+        rows = []
+        for line in data:
+            line_ = list(map(float,line.strip().split(',')[:-1]))
+            rows.append(line_)
+        self.weights = rows
+        print(np.array(self.weights))
+        
     def softmax(self, vec):
         maxvec = max(vec)
-        vec2 = map(lambda x: x-maxvec,vec)
-        expvec = map(math.exp,vec2)
+        vec2 = [x-maxvec for x in vec]
+        expvec = [math.exp(x) for x in vec2]
         norm = sum(expvec)
-        return expvec/norm
+        return [x/norm for x in expvec]
 
     def choose(self, chances):
         return random.choices(range(self.num_out), weights=chances)
 
-    #use this function to output the index of the action to be taken
     def sample(self, input_):
-        Y = copy.deepcopy(self.weights)
-        for y in range(len(input_)):
-            for x in range(len(self.weights)):
-                Y[x][y]*=input_[x]
-        Y = self.softmax(map(sum,Y))
-
-        if VERBOSE:
-            print input_
-            print self.weights
-            print np.matmul(self.weights, input_)
-            print Y
+        Y = [0 for i in range(self.num_out)]
+        for j in range(self.num_out):
+            for i in range(self.num_in):
+                Y[j] += self.weights[j][i] + input_[i]
+        Y = self.softmax(Y)
         
-        idx = self.choose(Y)
-        gradient_rows = []
-        for i in range(self.num_out):
-            gradient_rows.append(input_*(-Y[i]))
-        gradient_rows[idx] += input_
-        self.gradient += np.stack(gradient_rows, axis = 0)
+        idx = self.choose(Y)[0]
         return idx
 
-    #use this function to give the brain a reward and update params
     def give_reward(self, reward, lr = 0.0001):
-        delta = self.gradient*(reward-self.baseline)*lr
-        if VERBOSE:
-            print 'rewarding...'
-            print self.gradient
-            print delta
-        self.weights += delta
         self.baseline = self.decay*self.baseline + (1.0-self.decay)*reward
-        self.newgame()
 
 def test():
     data = []
     
     B = Brain(10,4)
-    for k in range(100000):
+    B.loadweights()
+    for k in range(10000):
         x = random.randint(1,4)
         y = random.randint(1,4)
 
@@ -95,11 +82,11 @@ def test():
             rwd = -10
 
         B.give_reward(rwd)
-        print rwd, 
+        print(rwd)
         sys.stdout.flush()
         data.append(B.baseline)
 
     plt.plot(data)
-    plt.show()
+    plt.savefig('graph.png')
     
 test()

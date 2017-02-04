@@ -8,15 +8,24 @@ import random
 VERBOSE = 0
 
 class Brain:
-    def __init__(self, num_in, num_out, decay = 0.995):
+    def __init__(self, num_in, num_out, decay = 0.999):
         mag = 0.01/num_in #xavier init.
         self.weights = np.random.normal(0.0, mag, (num_out, num_in))
         self.num_in = num_in
         self.num_out = num_out
-        self.baseline = 0
+        self.baseline = 30
         self.decay = decay
         self.newgame()
 
+    def saveweights(self, filename = 'weights'):
+        f = open(filename, 'w')
+        for row in self.weights:
+            for num in row:
+                f.write(str(num))
+                f.write(',')
+            f.write('\n')
+        f.close()
+        
     def newgame(self):
         self.gradient = 0
 
@@ -96,5 +105,6 @@ def test():
 
     plt.plot(data)
     plt.show()
+    B.saveweights()
     
-#test()
+test()

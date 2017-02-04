@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from robot import Robot
 from robot import Bank
 from board import Board
@@ -55,7 +57,7 @@ def make_board():
 def main():
     brain = Brain(158, 10)
 
-    for i in range(1):
+    for i in range(100):
         #instantiate robots
         game = []
         defaultVision = SetupConstants.DEFAULTVISION
