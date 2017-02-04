@@ -91,12 +91,13 @@ def main():
 
 
 def run_game(game, robots, board):
+    brain = Brain(num_in, 8)
     for i in range(NUM_TURNS):
         for robot in robots:
             robot.set_turn(i)
             view = board.get_view(robot)
             try:
-                move = robot.get_move(view)
+                move = robot.get_move(view, brain)
                 board.make_move(robot, move)
             except KeyboardInterrupt:
                 with open("map.txt", 'w') as gameFile:
@@ -104,6 +105,7 @@ def run_game(game, robots, board):
                     print (board.get_score())
                 exit()
         game.append((board.get_elements(), board.get_score()))
+    brain.give_reward(board.get_score())
 #         board.display()
 #         print
 
