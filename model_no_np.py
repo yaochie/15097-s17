@@ -29,7 +29,7 @@ class Brain:
     def softmax(self, vec):
         maxvec = max(vec)
         vec2 = [x-maxvec for x in vec]
-        expvec = [math.exp(x) for x in vec2]
+        expvec = [math.exp(x) for x in vec2] #j
         norm = sum(expvec)
         return [x/norm for x in expvec]
 
