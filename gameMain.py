@@ -26,7 +26,7 @@ def generate_board():
         for col in range(BOARD_DIM):
             if col % 2 == 1 and random.randint(0,3) == 1:
                 board[row].append([tile.Resource(1,DEFAULT_AMOUNT),0,[]])
-                ResourceDepletions.append([row,col])
+                ResourceDepletions.append([row,col,1])
             elif (col % 2 == 0 and random.randint(0,5) == 1):
                 board[row].append([tile.Mountain(),0,[]])
                 obstacles.append([row,col])
