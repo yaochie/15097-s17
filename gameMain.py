@@ -55,7 +55,7 @@ def make_board():
 
 
 def main():
-    brain = Brain(158, 10)
+    brain = Brain(159, 8)
     brain.loadweights()
 
     for i in range(1):

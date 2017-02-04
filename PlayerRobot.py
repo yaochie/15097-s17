@@ -148,7 +148,6 @@ class player_robot(Robot):
                 break
 
         self.toHome.append(actionToTake)
-
         return (actionToTake, Actions.DROP_BLUE)
 
     """
