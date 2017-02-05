@@ -12,7 +12,6 @@ import time
 from globalVars import ResourceDepletions
 import threading
 import sys
-from model_no_np import Brain
 
 BOARD_DIM = SetupConstants.BOARD_DIM
 NUM_ROBOTS = SetupConstants.NUM_ROBOTS
@@ -55,55 +54,49 @@ def make_board():
 
 
 def main():
-    brain = Brain(159, 8)
-    brain.loadweights()
+    game = []
+    defaultVision = SetupConstants.DEFAULTVISION
+    defaultStorage = SetupConstants.DEFAULTSTORAGE
+    defaultPickupRate = SetupConstants.DEFAULTPICKUPRATE
 
-    for i in range(1):
-        #instantiate robots
-        game = []
-        defaultVision = SetupConstants.DEFAULTVISION
-        defaultStorage = SetupConstants.DEFAULTSTORAGE
-        defaultPickupRate = SetupConstants.DEFAULTPICKUPRATE
+    if(len(sys.argv) > 1):
+        (board,obstacles,length) = make_board()
+        game += [length, [length//2,length//2]]
+        robotX = length//2
+        robotY = length//2
+    else:
+        (board,obstacles) = generate_board()
+        game += [BOARD_DIM, [XLOC,YLOC]]
+        robotX = XLOC
+        robotY = YLOC
 
-        if(len(sys.argv) > 1):
-            (board,obstacles,length) = make_board()
-            game += [length, [length//2,length//2]]
-            robotX = length//2
-            robotY = length//2
-        else:
-            (board,obstacles) = generate_board()
-            game += [BOARD_DIM, [XLOC,YLOC]]
-            robotX = XLOC
-            robotY = YLOC
+    args = [defaultVision, defaultStorage, defaultPickupRate, robotX, robotY]
+    robots = []
+    for i in range(NUM_ROBOTS):
+        robots.append(player_robot(args))
 
-        args = [defaultVision, defaultStorage, defaultPickupRate, robotX, robotY]
-        robots = []
-        for i in range(NUM_ROBOTS):
-            robots.append(player_robot(args))
+    board = Board(board, robots, Bank())
+    
+    game.append(obstacles)
+    game.append((board.get_elements(True), board.get_score()))
 
-        board = Board(board, robots, Bank())
+    gameThread = threading.Thread(None,lambda:run_game(game, robots, board))
+    gameThread.daemon = True
+    gameThread.start()
+    gameThread.join(300)
+    if(gameThread.isAlive()):
+        print("Your robot timed out")
+    with open("map.txt", 'w') as gameFile:
+        json.dump(game, gameFile)
+    print (board.get_score())
 
-        game.append(obstacles)
-        game.append((board.get_elements(True), board.get_score()))
-
-        gameThread = threading.Thread(None,lambda:run_game(game, robots, board, brain))
-        gameThread.daemon = True
-        gameThread.start()
-        gameThread.join(300)
-        if(gameThread.isAlive()):
-            print("Your robot timed out")
-        with open("map.txt", 'w') as gameFile:
-            json.dump(game, gameFile)
-        print (board.get_score())
-        #brain.give_reward(board.get_score())
-
-def run_game(game, robots, board, brain):
+def run_game(game, robots, board):
     for i in range(NUM_TURNS):
         for robot in robots:
             robot.set_turn(i)
             view = board.get_view(robot)
             try:
-                move = robot.get_move(view, brain)
+                move = robot.get_move(view)
                 board.make_move(robot, move)
             except KeyboardInterrupt:
                 with open("map.txt", 'w') as gameFile:

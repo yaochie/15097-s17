@@ -13,7 +13,7 @@ class Brain:
         self.weights = np.random.normal(0.0, mag, (num_out, num_in))
         self.num_in = num_in
         self.num_out = num_out
-        self.baseline = 0.0
+        self.baseline = 3000.0
         self.decay = decay
         self.newgame()
 

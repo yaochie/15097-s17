@@ -97,8 +97,7 @@ def main():
         brain.give_reward(board.get_score())
         print(brain.baseline)
 
-        if (i % 100 == 0):
-            brain.saveweights()
+        brain.saveweights()
 
 def run_game(game, robots, board, brain):
     for i in range(NUM_TURNS):
@@ -106,7 +105,7 @@ def run_game(game, robots, board, brain):
             robot.set_turn(i)
             view = board.get_view(robot)
             try:
-                move = robot.get_move(view, brain)
+                move = robot.get_move(view)
                 board.make_move(robot, move)
             except KeyboardInterrupt:
                 with open("map.txt", 'w') as gameFile:
